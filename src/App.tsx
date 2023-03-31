@@ -44,6 +44,12 @@ function App() {
   useEffect(() => {
     window.ipcRenderer.on('focus', (event, message) => {
       textareaRef.current?.focus();
+
+      const clipboardText = window.clipboard.readText();
+      setUserInput(clipboardText);
+      setTimeout(() => {
+        textareaRef.current?.select();
+      }, 0);
     });
   }, []);
   
@@ -123,14 +129,15 @@ function App() {
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
-      <label htmlFor="api-key">API Key:</label>
+      <p>Ctrl + Spaceでウィンドウ呼び出し</p>
+      {/* <label htmlFor="api-key">API Key:</label>
       <input
         id="api-key"
         type="text"
         value={apiKey}
         onChange={handleApiKeyChange}
         placeholder="Enter your OpenAI API key"
-      />
+      /> */}
       <br/>
       <textarea
         ref={textareaRef}
@@ -142,6 +149,8 @@ function App() {
       />
       <br/>
       Ctrl + Enterで送信
+      <hr/>
+      <h2>回答</h2>
       {/* <button onClick={handleSend}>Send</button> */}
       <div dangerouslySetInnerHTML={{__html: response}}></div>
     </div>
