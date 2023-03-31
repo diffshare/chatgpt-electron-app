@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import {ChatCompletionRequestMessageRoleEnum, Configuration, CreateChatCompletionRequest, OpenAIApi} from 'openai';
+import markdownit from 'markdown-it';
 
 function App() {
   const [apiKey, setApiKey] = useState('');
@@ -31,7 +32,7 @@ function App() {
     try {
       const result = await openai.createChatCompletion(requestOptions);
       const generatedResponse = result?.data.choices[0].message?.content;
-      setResponse(`Assistant: ${generatedResponse}`);
+      setResponse(`${generatedResponse && markdownit().render(generatedResponse)}`);
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
@@ -58,7 +59,7 @@ function App() {
         placeholder="Type your message here..."
       />
       <button onClick={handleSend}>Send</button>
-      <div>{response}</div>
+      <div dangerouslySetInnerHTML={{__html: response}}></div>
     </div>
   );
 }
