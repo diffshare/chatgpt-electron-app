@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
+import { app, BrowserWindow, globalShortcut } from 'electron';
 import * as path from 'path';
 
 function createWindow() {
