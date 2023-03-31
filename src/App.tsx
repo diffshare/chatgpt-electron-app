@@ -3,6 +3,24 @@ import './App.css';
 import {ChatCompletionRequestMessageRoleEnum, Configuration, CreateChatCompletionRequest, OpenAIApi} from 'openai';
 import markdownit from 'markdown-it';
 
+const utf8Decoder = new TextDecoder('utf-8')
+
+const decodeResponse = (response?: Uint8Array) => {
+  if (!response) {
+    return ''
+  }
+
+  const pattern = /"delta":\s*({.*?"content":\s*".*?"})/g
+  const decodedText = utf8Decoder.decode(response)
+  const matches: string[] = []
+
+  let match
+  while ((match = pattern.exec(decodedText)) !== null) {
+    matches.push(JSON.parse(match[1]).content)
+  }
+  return matches.join('')
+}
+
 function App() {
   const [apiKey, setApiKey] = useState('');
   const [userInput, setUserInput] = useState('');
@@ -27,12 +45,39 @@ function App() {
       max_tokens: 150,
       n: 1,
       temperature: 0.8,
+      stream: true,
     };
 
     try {
-      const result = await openai.createChatCompletion(requestOptions);
-      const generatedResponse = result?.data.choices[0].message?.content;
-      setResponse(`${generatedResponse && markdownit().render(generatedResponse)}`);
+      // const result = openai.createChatCompletion(requestOptions, {responseType: 'stream'});
+      const API_URL = 'https://api.openai.com/v1/chat/completions'
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestOptions),
+      })
+
+      if (!response.body) throw new Error('No response body');
+      const reader = response.body?.getReader();
+
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const delta = decodeResponse(value)
+        fullText += delta
+
+        setResponse(fullText);
+      }
+
+      // for await (const message of streamCompletion(result))
+      // const generatedResponse = result?.data.choices[0].message?.content;
+      // setResponse(`${generatedResponse && markdownit().render(generatedResponse)}`);
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
