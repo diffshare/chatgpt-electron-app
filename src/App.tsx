@@ -55,7 +55,7 @@ function App() {
           content: `User: ${userInput}\nAssistant:`,
         }
       ],
-      max_tokens: 150,
+      max_tokens: 1500,
       n: 1,
       temperature: 0.8,
       stream: true,
@@ -72,6 +72,7 @@ function App() {
         },
         body: JSON.stringify(requestOptions),
       })
+      setUserInput('');
 
       if (!response.body) throw new Error('No response body');
       const reader = response.body?.getReader();
@@ -85,7 +86,7 @@ function App() {
         const delta = decodeResponse(value)
         fullText += delta
 
-        setResponse(fullText);
+        setResponse(markdownit().render(fullText));
       }
 
       // for await (const message of streamCompletion(result))
@@ -96,7 +97,13 @@ function App() {
       setResponse('Error: Failed to get a response from ChatGPT.');
     }
 
-    setUserInput('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      handleSend();
+      e.preventDefault(); // デフォルトのEnterキーの動作（改行）をキャンセル
+    }
   };
 
   return (
@@ -115,9 +122,12 @@ function App() {
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         placeholder="Type your message here..."
+        onKeyUp={handleKeyPress}
         rows={5}
       />
-      <button onClick={handleSend}>Send</button>
+      <br/>
+      Ctrl + Enterで送信
+      {/* <button onClick={handleSend}>Send</button> */}
       <div dangerouslySetInnerHTML={{__html: response}}></div>
     </div>
   );
