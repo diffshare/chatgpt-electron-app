@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import {ChatCompletionRequestMessageRoleEnum, Configuration, CreateChatCompletionRequest, OpenAIApi} from 'openai';
 import markdownit from 'markdown-it';
@@ -25,6 +25,19 @@ function App() {
   const [apiKey, setApiKey] = useState('');
   const [userInput, setUserInput] = useState('');
   const [response, setResponse] = useState('');
+
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('apiKey');
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
+  
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newApiKey = e.target.value;
+    setApiKey(newApiKey);
+    localStorage.setItem('apiKey', newApiKey);
+  };
 
   const handleSend = async () => {
     if (!userInput || !apiKey) return;
@@ -94,7 +107,7 @@ function App() {
         id="api-key"
         type="text"
         value={apiKey}
-        onChange={(e) => setApiKey(e.target.value)}
+        onChange={handleApiKeyChange}
         placeholder="Enter your OpenAI API key"
       />
       <input
