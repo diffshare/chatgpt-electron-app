@@ -52,8 +52,7 @@
     "concurrently": "^8.0.1",
     "cross-env": "^7.0.3",
     "electron": "^23.2.1",
-    "electron-builder": "^23.6.0",
-    "electron-pack": "^1.3.2"
+    "electron-builder": "^23.6.0"
   },
   "build": {
     "productName": "ChatElectron",
