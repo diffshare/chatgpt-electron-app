@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import {ChatCompletionRequestMessageRoleEnum, Configuration, CreateChatCompletionRequest, OpenAIApi} from 'openai';
 import markdownit from 'markdown-it';
+import { ipcRenderer } from 'electron';
+
+declare global {
+  interface Window {
+      ipcRenderer: typeof ipcRenderer;
+  }
+}
 
 const utf8Decoder = new TextDecoder('utf-8')
 
@@ -22,6 +29,7 @@ const decodeResponse = (response?: Uint8Array) => {
 }
 
 function App() {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [apiKey, setApiKey] = useState('');
   const [userInput, setUserInput] = useState('');
   const [response, setResponse] = useState('');
@@ -31,6 +39,12 @@ function App() {
     if (storedApiKey) {
       setApiKey(storedApiKey);
     }
+  }, []);
+
+  useEffect(() => {
+    window.ipcRenderer.on('focus', (event, message) => {
+      textareaRef.current?.focus();
+    });
   }, []);
   
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +133,7 @@ function App() {
       />
       <br/>
       <textarea
+        ref={textareaRef}
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         placeholder="Type your message here..."

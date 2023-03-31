@@ -24,7 +24,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron": "tsc ./src/electron.ts && electron ./src/electron.js",
+    "electron": "tsc ./src/electron.ts ./src/preload.ts && electron ./src/electron.js",
     "electron-start": "concurrently \"cross-env BROWSER=none npm start\" \"cross-env wait-on http://localhost:3000 && npm run electron\""
   },
   "eslintConfig": {

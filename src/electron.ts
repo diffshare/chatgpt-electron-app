@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import * as path from 'path';
 
 function createWindow() {
@@ -6,6 +6,7 @@ function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
       contextIsolation: false,
     },
@@ -13,6 +14,25 @@ function createWindow() {
 
   win.loadURL("http://localhost:3000");
 //   win.loadFile(path.join(__dirname, '../public/index.html'));
+    globalShortcut.register('CommandOrControl+Space', () => {
+        console.log('CommandOrControl+Space is pressed');
+
+        if (!win.isVisible()) {
+            // windowを表示する
+            win.show();
+
+            // 他のwindowより手前に表示する
+            //win.setAlwaysOnTop(true, 'floating');
+
+            // windowをアクティブにする
+            win.focus();
+
+            win.webContents.send('focus');
+        } else {
+            // windowを非表示にする
+            win.hide();
+        }
+    });
 }
 
 app.whenReady().then(createWindow);
