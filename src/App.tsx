@@ -110,11 +110,12 @@ function App() {
         onChange={handleApiKeyChange}
         placeholder="Enter your OpenAI API key"
       />
-      <input
-        type="text"
+      <br/>
+      <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         placeholder="Type your message here..."
+        rows={5}
       />
       <button onClick={handleSend}>Send</button>
       <div dangerouslySetInnerHTML={{__html: response}}></div>
