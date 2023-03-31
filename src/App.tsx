@@ -33,6 +33,11 @@ function App() {
   const [apiKey, setApiKey] = useState('');
   const [userInput, setUserInput] = useState('');
   const [response, setResponse] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+
+  const handleToggleApiKeyInput = () => {
+    setShowApiKeyInput(!showApiKeyInput);
+  };
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem('apiKey');
@@ -130,14 +135,21 @@ function App() {
     <div className="App">
       <h1>ChatGPT Electron App</h1>
       <p>Ctrl + Spaceでウィンドウ呼び出し</p>
-      <label htmlFor="api-key">API Key:</label>
-      <input
-        id="api-key"
-        type="text"
-        value={apiKey}
-        onChange={handleApiKeyChange}
-        placeholder="Enter your OpenAI API key"
-      />
+      {showApiKeyInput ? (
+        <>
+          <label htmlFor="api-key">API Key:</label>
+          <input
+            id="api-key"
+            type="text"
+            value={apiKey}
+            onChange={handleApiKeyChange}
+            placeholder="Enter your OpenAI API key"
+          />
+          <button onClick={handleToggleApiKeyInput}>Hide API Key Input</button>
+        </>
+      ) : (
+        <button onClick={handleToggleApiKeyInput}>Show API Key Input</button>
+      )}
       { apiKey && (
         <>
           <hr/>
