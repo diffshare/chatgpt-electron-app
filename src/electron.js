@@ -14,8 +14,8 @@ function createWindow() {
     });
     win.loadURL("http://localhost:3000");
     //   win.loadFile(path.join(__dirname, '../public/index.html'));
-    electron_1.globalShortcut.register('CommandOrControl+Space', function () {
-        console.log('CommandOrControl+Space is pressed');
+    electron_1.globalShortcut.register('Alt+Space', function () {
+        console.log('Alt+Space is pressed');
         if (!win.isVisible()) {
             // windowを表示する
             win.show();

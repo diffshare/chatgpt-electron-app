@@ -14,8 +14,8 @@ function createWindow() {
 
   win.loadURL("http://localhost:3000");
 //   win.loadFile(path.join(__dirname, '../public/index.html'));
-    globalShortcut.register('CommandOrControl+Space', () => {
-        console.log('CommandOrControl+Space is pressed');
+    globalShortcut.register('Alt+Space', () => {
+        console.log('Alt+Space is pressed');
 
         if (!win.isVisible()) {
             // windowを表示する

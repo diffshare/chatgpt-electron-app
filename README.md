@@ -12,7 +12,7 @@ To use the application, follow these steps:
 
 Once the application is running, you can use it as follows:
 
-- Press `Ctrl + Space` to show the application window.
+- Press `Alt + Space` to show the application window.
 - Type your message in the input box.
 - Press `Ctrl + Enter` to send your message and get a response.
 
