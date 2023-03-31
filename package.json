@@ -10,7 +10,6 @@
     "@types/node": "^16.18.23",
     "@types/react": "^18.0.31",
     "@types/react-dom": "^18.0.11",
-    "electron": "^23.2.1",
     "markdown-it": "^13.0.1",
     "openai": "^3.2.1",
     "react": "^18.2.0",
@@ -21,11 +20,14 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "react-build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "tsc ./src/electron.ts ./src/preload.ts && electron ./src/electron.js",
-    "electron-start": "concurrently \"cross-env BROWSER=none npm start\" \"cross-env wait-on http://localhost:3000 && npm run electron\""
+    "electron-start": "concurrently \"cross-env BROWSER=none npm start\" \"cross-env wait-on http://localhost:3000 && npm run electron\"",
+    "electron-build": "electron-builder",
+    "build": "npm run react-build && npm run electron-build",
+    "electron-pack": "electron-builder --dir"
   },
   "eslintConfig": {
     "extends": [
@@ -48,6 +50,33 @@
   "devDependencies": {
     "@types/markdown-it": "^12.2.3",
     "concurrently": "^8.0.1",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "electron": "^23.2.1",
+    "electron-builder": "^23.6.0",
+    "electron-pack": "^1.3.2"
+  },
+  "build": {
+    "productName": "ChatElectron",
+    "appId": "com.myapp.ChatElectron",
+    "directories": {
+      "output": "dist"
+    },
+    "extraMetadata": {
+      "main": "./src/electron.js"
+    },
+    "files": [
+      "build/**/*",
+      "src/*.js",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
