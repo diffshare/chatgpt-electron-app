@@ -1,46 +1,31 @@
-# Getting Started with Create React App
+# ChatGPT Electron App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is a simple chat application that uses the OpenAI GPT-3.5 model to generate responses to user messages. The application is built using Electron and React.
 
-## Available Scripts
+## Usage
 
-In the project directory, you can run:
+To use the application, follow these steps:
 
-### `npm start`
+1. Clone this repository.
+2. Install the required dependencies by running `npm install`.
+3. Start the application by running `npm electron-start`.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Once the application is running, you can use it as follows:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- Press `Ctrl + Space` to show the application window.
+- Type your message in the input box.
+- Press `Ctrl + Enter` to send your message and get a response.
 
-### `npm test`
+## Configuration
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+To use the OpenAI API, you need to set your API key. You can set your API key in the `apiKey` variable in the `App` component. Alternatively, you can enter your API key in the input box that appears when you run the application. The API key will be stored in your browser's local storage so that you don't have to enter it again next time you use the application.
 
-### `npm run build`
+## Acknowledgements
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+This application was built using the following technologies and libraries:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Electron
+- React
+- OpenAI API
+- markdown-it
+- electron-builder.
