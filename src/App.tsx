@@ -39,7 +39,6 @@ const decodeResponse = (response?: Uint8Array) => {
   return matches.join('')
 }
 
-// window.AudioContext = window.AudioContext || window.webkitAudioContext; 
 var context = new AudioContext();
 
 const VOICEVOX_URI = 'http://localhost:50021';
@@ -56,15 +55,21 @@ const createVoice = async (text: string, speaker: number = 1) => {
       'accept': 'audio/wav',
     }
   });
-  // const voice = await client.voice.createVoice(0, query);
   return await synthesis.arrayBuffer();
-  // const buf = Buffer.from(voice);
 }
+// シンプルなタスクランナー
+let tasks = Promise.resolve();
+// 音声合成を行い再生するタスクをランナーに依頼する関数
 const playVoice = async (text: string, speakerId: number) => {
-  const source = context.createBufferSource();
-  source.buffer = await context.decodeAudioData(await createVoice(text, speakerId));
-  source.connect(context.destination);
-  source.start();
+  tasks = tasks.then(() => {
+    return new Promise(async (resolve) => {
+      const source = context.createBufferSource();
+      source.buffer = await context.decodeAudioData(await createVoice(text, speakerId));
+      source.connect(context.destination);
+      source.onended = () => {resolve();};
+      source.start();
+    });
+  });
 }
 
 function App() {
@@ -78,6 +83,7 @@ function App() {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [speakerId, setSpeakerId] = useState('1');
+  const [playInMiddle, setPlayInMiddle] = useState(true);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -167,6 +173,8 @@ function App() {
       const reader = response.body.getReader();
 
       let fullText = '';
+      const spokenArray: string[] = [];
+      const re = /([^。！？]{1,}[。！？])/g;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -176,7 +184,17 @@ function App() {
         fullText += delta
 
         setResponse(markdownit().render(fullText));
-      }
+
+        if (playVoiceVox && playInMiddle) {
+          let match;
+          while ((match = re.exec(fullText)) !== null) {
+            if (spokenArray.includes(match[1])) continue;
+            playVoice(match[1], parseInt(speakerId))
+            console.log(match[1]);
+            spokenArray.push(match[1]);
+          }
+        }
+    }
 
       setResponse('');
       setMessages((prevMessages) => {
@@ -187,7 +205,7 @@ function App() {
         return updatedMessages;
       });
       setError('');
-      playVoiceVox && playVoice(fullText, parseInt(speakerId));
+      playVoiceVox && !playInMiddle && playVoice(fullText, parseInt(speakerId));
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
@@ -329,6 +347,10 @@ function App() {
             <input type="checkbox" checked={playVoiceVox} onChange={handlePlayVoiceVoxChange} />
             Play VoiceVox            
             (Speaker ID:<input type="text" id='speaker-id' value={speakerId} onChange={(e) => setSpeakerId(e.target.value)} />)
+          </label>
+          <label>
+            <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
+            Play In middle
           </label>
           <div className="messagesEnd" ref={messagesEndRef} />
         </>
