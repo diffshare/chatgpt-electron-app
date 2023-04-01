@@ -10,6 +10,17 @@ declare global {
   }
 }
 
+type Message = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+// メッセージ履歴を取得する関数
+const getMessageHistoryFromLocalStorage = (): Message[] => {
+  const storedHistory = localStorage.getItem('messageHistory');
+  return storedHistory ? JSON.parse(storedHistory) : [];
+};
+
 const utf8Decoder = new TextDecoder('utf-8')
 
 const decodeResponse = (response?: Uint8Array) => {
@@ -34,6 +45,7 @@ function App() {
   const [userInput, setUserInput] = useState('');
   const [response, setResponse] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -44,6 +56,11 @@ function App() {
     if (storedApiKey) {
       setApiKey(storedApiKey);
     }
+  }, []);
+
+  // アプリケーションがマウントされたときにメッセージ履歴をローカルストレージから取得
+  useEffect(() => {
+    setMessages(getMessageHistoryFromLocalStorage());
   }, []);
 
   useEffect(() => {
@@ -66,6 +83,8 @@ function App() {
 
   const handleSend = async () => {
     if (!userInput || !apiKey) return;
+
+    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: userInput }]);
 
     const configuration = new Configuration({
       apiKey
@@ -114,9 +133,14 @@ function App() {
         setResponse(markdownit().render(fullText));
       }
 
-      // for await (const message of streamCompletion(result))
-      // const generatedResponse = result?.data.choices[0].message?.content;
-      // setResponse(`${generatedResponse && markdownit().render(generatedResponse)}`);
+      setResponse('');
+      setMessages((prevMessages) => {
+        // メッセージ履歴を更新
+        const updatedMessages = [...prevMessages, { role: 'assistant', content: markdownit().render(fullText) } as Message];
+        // メッセージ履歴をローカルストレージに保存
+        localStorage.setItem('messageHistory', JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
@@ -153,8 +177,19 @@ function App() {
       { apiKey && (
         <>
           <hr/>
-          <h2>回答</h2>
           {/* <button onClick={handleSend}>Send</button> */}
+
+          {/* messagesステートを繰り返し処理して、メッセージを表示 */}
+          <div className="messages">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={message.role === 'user' ? 'user-message' : 'assistant-message'}
+                dangerouslySetInnerHTML={{ __html: message.content }}
+              ></div>
+            ))}
+          </div>
+          {/* リアルタイムのメッセージを表示 */}
           <div dangerouslySetInnerHTML={{__html: response}}></div>
           <br/>
           <textarea
