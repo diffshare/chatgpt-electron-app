@@ -159,6 +159,11 @@ function App() {
     setMessages([]);
   };
 
+  // メッセージをクリップボードにコピーする
+  const handleCopyToClipboard = (message: Message) => {
+    window.clipboard.writeText(message.content);
+  };
+
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
@@ -187,11 +192,15 @@ function App() {
           {/* messagesステートを繰り返し処理して、メッセージを表示 */}
           <div className="messages">
             {messages.map((message, index) => (
-              <div
-                key={index}
-                className={message.role === 'user' ? 'user-message' : 'assistant-message'}
-                dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
-              ></div>
+              <>
+                <div
+                  key={index}
+                  className={message.role === 'user' ? 'user-message' : 'assistant-message'}
+                  dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
+                ></div>
+                {/* コピー用ボタンを追加 */}
+                <button onClick={() => handleCopyToClipboard(message)}>Copy to Clipboard</button>
+              </>
             ))}
           </div>
           {/* リアルタイムのメッセージを表示 */}
