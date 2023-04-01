@@ -163,8 +163,14 @@ function App() {
   };
 
   // メッセージをクリップボードにコピーする
-  const handleCopyToClipboard = (message: Message) => {
-    window.clipboard.writeText(message.content);
+  const handleCopyToClipboard = async (message: Message) => {
+    if (window.clipboard?.writeText) {
+      // electronの場合はwindow.clipboard.writeTextを使う
+      window.clipboard.writeText(message.content);
+    } else {
+      // ブラウザの場合はnavigator.clipboard.writeTextを使う
+      await navigator.clipboard.writeText(message.content);
+    }
   };
 
   return (
