@@ -39,15 +39,45 @@ const decodeResponse = (response?: Uint8Array) => {
   return matches.join('')
 }
 
+// window.AudioContext = window.AudioContext || window.webkitAudioContext; 
+var context = new AudioContext();
+
+const VOICEVOX_URI = 'http://localhost:50021';
+const createVoice = async (text: string, speaker: number = 1) => {
+  // const query = await client.query.createQuery(0, text);
+  const query = await fetch(`${VOICEVOX_URI}/audio_query?text=${encodeURI(text)}&speaker=${speaker}`, {
+    method: 'POST',
+  });
+  const synthesis = await fetch(`${VOICEVOX_URI}/synthesis?speaker=${speaker}`,{
+    method: 'POST',
+    body: await query.arrayBuffer(),
+    headers: {
+      'Content-Type': 'application/json',
+      'accept': 'audio/wav',
+    }
+  });
+  // const voice = await client.voice.createVoice(0, query);
+  return await synthesis.arrayBuffer();
+  // const buf = Buffer.from(voice);
+}
+const playVoice = async (text: string, speakerId: number) => {
+  const source = context.createBufferSource();
+  source.buffer = await context.decodeAudioData(await createVoice(text, speakerId));
+  source.connect(context.destination);
+  source.start();
+}
+
 function App() {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [apiKey, setApiKey] = useState('');
   const [userInput, setUserInput] = useState('');
   const [response, setResponse] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+  const [playVoiceVox, setPlayVoiceVox] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [speakerId, setSpeakerId] = useState('1');
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -157,6 +187,7 @@ function App() {
         return updatedMessages;
       });
       setError('');
+      playVoiceVox && playVoice(fullText, parseInt(speakerId));
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
@@ -224,6 +255,16 @@ function App() {
     }
   };
 
+  // VoiceVoxの再生チェックをローカルストレージから読み込む
+  useEffect(() => {
+    localStorage.getItem('playVoiceVox') === 'true' && setPlayVoiceVox(true);
+  }, []);
+  // VoiceVoxを再生する
+  const handlePlayVoiceVoxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayVoiceVox(e.target.checked);
+    localStorage.setItem('playVoiceVox', e.target.checked.toString());
+  };
+
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
@@ -281,7 +322,14 @@ function App() {
             rows={5}
           />
           <br/>
-          Ctrl + Enterで送信
+          <div className='note'>
+            Ctrl + Enterで送信
+          </div>
+          <label>
+            <input type="checkbox" checked={playVoiceVox} onChange={handlePlayVoiceVoxChange} />
+            Play VoiceVox            
+            (Speaker ID:<input type="text" id='speaker-id' value={speakerId} onChange={(e) => setSpeakerId(e.target.value)} />)
+          </label>
           <div className="messagesEnd" ref={messagesEndRef} />
         </>
       )}

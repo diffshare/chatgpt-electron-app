@@ -64,3 +64,11 @@ textarea {
 .error {
   color: red;
 }
+
+.note {
+  float: right;
+}
+
+#speaker-id {
+  width: 1em;
+}
