@@ -46,6 +46,7 @@ function App() {
   const [response, setResponse] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -173,6 +174,16 @@ function App() {
     }
   };
 
+  // スクロールを一番下に移動する
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // responseやmessagesが変更されたときにスクロール処理を実行
+  useEffect(() => {
+    scrollToBottom();
+  }, [response, messages]);
+
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
@@ -227,6 +238,7 @@ function App() {
           />
           <br/>
           Ctrl + Enterで送信
+          <div ref={messagesEndRef} />
         </>
       )}
     </div>
