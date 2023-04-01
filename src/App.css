@@ -60,3 +60,7 @@ textarea {
 .messagesEnd {
   height: 20px;
 }
+
+.error {
+  color: red;
+}

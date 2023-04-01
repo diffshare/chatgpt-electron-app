@@ -47,6 +47,7 @@ function App() {
   const [showApiKeyInput, setShowApiKeyInput] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -101,12 +102,15 @@ function App() {
           role: ChatCompletionRequestMessageRoleEnum.User,
           content: `${userInput}`,
       }),
-      max_tokens: 1500,
+      max_tokens: 1000,
       n: 1,
       temperature: 0.8,
       stream: true,
     };
 
+    setUserInput('');
+    setError('');
+    
     try {
       // const result = openai.createChatCompletion(requestOptions, {responseType: 'stream'});
       const API_URL = 'https://api.openai.com/v1/chat/completions'
@@ -121,7 +125,16 @@ function App() {
       setUserInput('');
 
       if (!response.body) throw new Error('No response body');
-      const reader = response.body?.getReader();
+      if (!response.ok) {
+        const reader = response.body?.getReader();
+        const { done, value } = await reader.read();
+        const error = JSON.parse(utf8Decoder.decode(value)).error;
+        const errorMessage = `${error.code}: ${error.message}`;
+        setError(errorMessage);
+        setResponse('');
+        return;
+      }
+      const reader = response.body.getReader();
 
       let fullText = '';
 
@@ -143,9 +156,11 @@ function App() {
         localStorage.setItem('messageHistory', JSON.stringify(updatedMessages));
         return updatedMessages;
       });
+      setError('');
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
+      setError(`Error: ${error}`);
     }
 
   };
@@ -254,6 +269,9 @@ function App() {
           {/* リアルタイムのメッセージを表示 */}
           <div dangerouslySetInnerHTML={{__html: response}}></div>
           <br/>
+          {error && (
+            <div className="error">{error}</div>
+          )}
           <textarea
             ref={textareaRef}
             value={userInput}
