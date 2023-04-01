@@ -1,31 +1,38 @@
 # ChatGPT Electron App
 
-This is a simple chat application that uses the OpenAI GPT-3.5 model to generate responses to user messages. The application is built using Electron and React.
+ChatGPT Electronアプリは、Electronを使用して開発されたデスクトップアプリケーションです。このアプリを使って、OpenAIのGPT-3.5-turboモデルと対話ができます。
 
-## Usage
+## インストール
 
-To use the application, follow these steps:
+このアプリを利用するためには、まずリポジトリをクローンし、必要なパッケージをインストールする必要があります。
 
-1. Clone this repository.
-2. Install the required dependencies by running `npm install`.
-3. Start the application by running `npm electron-start`.
+```bash
+git clone https://github.com/diffshare/chatgpt-electron-app.git
+cd ChatGPT-Electron-App
+npm install
+```
 
-Once the application is running, you can use it as follows:
+## 使い方
 
-- Press `Alt + Space` to show the application window.
-- Type your message in the input box.
-- Press `Ctrl + Enter` to send your message and get a response.
+アプリを実行するには、次のコマンドを実行してください。
 
-## Configuration
+```bash
+npm start
+```
 
-To use the OpenAI API, you need to set your API key. You can set your API key in the `apiKey` variable in the `App` component. Alternatively, you can enter your API key in the input box that appears when you run the application. The API key will be stored in your browser's local storage so that you don't have to enter it again next time you use the application.
+アプリが起動したら、まずAPIキーを入力してください。APIキーは、[OpenAIのダッシュボード](https://beta.openai.com/signup/)から取得できます。
 
-## Acknowledgements
+APIキーを入力したら、テキストエリアにメッセージを入力して、`Ctrl`+`Enter`を押すことでGPT-3.5-turboモデルにリクエストを送信できます。メッセージの送信と受信がアプリ上で表示されます。
 
-This application was built using the following technologies and libraries:
+## 機能
 
-- Electron
-- React
-- OpenAI API
-- markdown-it
-- electron-builder.
+- GPT-3.5-turboモデルと対話できる
+- メッセージ履歴の保存と復元が可能
+- メッセージを送信する際に、メッセージ履歴を考慮する
+- Markdown形式のメッセージを表示できる
+- キーボードショートカットで送信ができる (`Ctrl`+`Enter`)
+
+## 注意事項
+
+- APIキーはローカルストレージに保存されます。セキュリティを強化する場合は、この部分を変更してください。
+- メッセージ履歴はローカルストレージに保存されます。大量のメッセージが保存されると、パフォーマンスに影響を与える可能性があります。適切な処理を追加してください。
