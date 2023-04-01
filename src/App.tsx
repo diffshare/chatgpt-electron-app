@@ -184,6 +184,31 @@ function App() {
     scrollToBottom();
   }, [response, messages]);
 
+  // 履歴をMarkdown形式でクリップボードにコピーする
+  const handleExportHistory = async () => {
+    // メッセージ履歴をMarkdown形式のテキストに変換する
+    const markdownHistory = messages.map((message) => {
+      if (message.role === "user") {
+        return `\`\`\`\n${message.content}\n\`\`\`\n↓\n`;
+      } else {
+        return `${message.content}\n\n----\n`;
+      }
+    }).join("");
+
+    // クリップボードにコピーする
+    try {
+      if (window.clipboard?.writeText) {
+        window.clipboard.writeText(markdownHistory);
+      } else {
+        await navigator.clipboard.writeText(markdownHistory);
+      }
+      alert("Message history has been copied to the clipboard.");
+    } catch (err) {
+      console.error("Failed to copy message history to the clipboard: ", err);
+      alert("Failed to copy message history to the clipboard.");
+    }
+  };
+
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
@@ -204,6 +229,7 @@ function App() {
         <button onClick={handleToggleApiKeyInput}>Show API Key Input</button>
       )}
       <button onClick={handleClearHistory}>Clear History</button>
+      <button onClick={handleExportHistory}>Export History</button>
       { apiKey && (
         <>
           <hr/>
