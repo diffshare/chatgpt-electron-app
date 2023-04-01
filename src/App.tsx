@@ -157,6 +157,12 @@ function App() {
     }
   };
 
+  // 履歴を削除する
+  const handleClearHistory = () => {
+    localStorage.removeItem('messageHistory');
+    setMessages([]);
+  };
+
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
@@ -176,6 +182,7 @@ function App() {
       ) : (
         <button onClick={handleToggleApiKeyInput}>Show API Key Input</button>
       )}
+      <button onClick={handleClearHistory}>Clear History</button>
       { apiKey && (
         <>
           <hr/>
