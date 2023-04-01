@@ -202,7 +202,9 @@ function App() {
                   dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
                 ></div>
                 {/* コピー用ボタンを追加 */}
-                <button onClick={() => handleCopyToClipboard(message)}>Copy to Clipboard</button>
+                <div className="MessageActions">
+                  <button onClick={() => handleCopyToClipboard(message)}>Copy to Clipboard</button>
+                </div>
               </>
             ))}
           </div>

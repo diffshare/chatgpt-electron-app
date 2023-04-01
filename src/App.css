@@ -51,3 +51,8 @@ textarea {
   margin: 10px 0;
   color: #ff6600;
 }
+
+.MessageActions {
+  text-align: right;
+  opacity: 0.35;
+}
