@@ -13,7 +13,6 @@ declare global {
 type Message = {
   role: 'user' | 'assistant';
   content: string;
-  html: string;
 };
 
 // メッセージ履歴を取得する関数
@@ -85,7 +84,7 @@ function App() {
   const handleSend = async () => {
     if (!userInput || !apiKey) return;
 
-    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: userInput, html: markdownit().render(userInput) }]);
+    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: userInput }]);
 
     const configuration = new Configuration({
       apiKey
@@ -97,9 +96,6 @@ function App() {
       messages: messages.concat({
           role: ChatCompletionRequestMessageRoleEnum.User,
           content: `${userInput}`,
-          html: markdownit().render(userInput),
-      }).map((message) => {
-        return {...message, html: undefined};
       }),
       max_tokens: 1500,
       n: 1,
@@ -138,7 +134,7 @@ function App() {
       setResponse('');
       setMessages((prevMessages) => {
         // メッセージ履歴を更新
-        const updatedMessages = [...prevMessages, { role: 'assistant', content: fullText, html: markdownit().render(fullText) } as Message];
+        const updatedMessages = [...prevMessages, { role: 'assistant', content: fullText } as Message];
         // メッセージ履歴をローカルストレージに保存
         localStorage.setItem('messageHistory', JSON.stringify(updatedMessages));
         return updatedMessages;
@@ -194,7 +190,7 @@ function App() {
               <div
                 key={index}
                 className={message.role === 'user' ? 'user-message' : 'assistant-message'}
-                dangerouslySetInnerHTML={{ __html: message.html }}
+                dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
               ></div>
             ))}
           </div>
