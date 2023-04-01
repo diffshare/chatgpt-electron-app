@@ -238,7 +238,7 @@ function App() {
           />
           <br/>
           Ctrl + Enterで送信
-          <div ref={messagesEndRef} />
+          <div className="messagesEnd" ref={messagesEndRef} />
         </>
       )}
     </div>
