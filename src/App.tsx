@@ -15,6 +15,12 @@ type Message = {
   content: string;
 };
 
+// メッセージ履歴を取得する関数
+const getMessageHistoryFromLocalStorage = (): Message[] => {
+  const storedHistory = localStorage.getItem('messageHistory');
+  return storedHistory ? JSON.parse(storedHistory) : [];
+};
+
 const utf8Decoder = new TextDecoder('utf-8')
 
 const decodeResponse = (response?: Uint8Array) => {
@@ -50,6 +56,11 @@ function App() {
     if (storedApiKey) {
       setApiKey(storedApiKey);
     }
+  }, []);
+
+  // アプリケーションがマウントされたときにメッセージ履歴をローカルストレージから取得
+  useEffect(() => {
+    setMessages(getMessageHistoryFromLocalStorage());
   }, []);
 
   useEffect(() => {
@@ -123,8 +134,13 @@ function App() {
       }
 
       setResponse('');
-      setMessages((prevMessages) => [...prevMessages, { role: 'assistant', content: markdownit().render(fullText) }]);
-
+      setMessages((prevMessages) => {
+        // メッセージ履歴を更新
+        const updatedMessages = [...prevMessages, { role: 'assistant', content: markdownit().render(fullText) } as Message];
+        // メッセージ履歴をローカルストレージに保存
+        localStorage.setItem('messageHistory', JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
