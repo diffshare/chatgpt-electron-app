@@ -93,12 +93,10 @@ function App() {
 
     const requestOptions: CreateChatCompletionRequest = {
       model: 'gpt-3.5-turbo',
-      messages: [
-        {
+      messages: messages.concat({
           role: ChatCompletionRequestMessageRoleEnum.User,
           content: `User: ${userInput}\nAssistant:`,
-        }
-      ],
+      }),
       max_tokens: 1500,
       n: 1,
       temperature: 0.8,
