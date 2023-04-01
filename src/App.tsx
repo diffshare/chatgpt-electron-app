@@ -51,10 +51,13 @@ function App() {
     setShowApiKeyInput(!showApiKeyInput);
   };
 
+  // アプリケーションがマウントされたときにAPIキーをローカルストレージから取得
   useEffect(() => {
     const storedApiKey = localStorage.getItem('apiKey');
     if (storedApiKey) {
       setApiKey(storedApiKey);
+      // APIキーがローカルストレージに保存されている場合はAPIキー入力欄を非表示にする
+      setShowApiKeyInput(false);
     }
   }, []);
 
