@@ -93,12 +93,10 @@ function App() {
 
     const requestOptions: CreateChatCompletionRequest = {
       model: 'gpt-3.5-turbo',
-      messages: [
-        {
+      messages: messages.concat({
           role: ChatCompletionRequestMessageRoleEnum.User,
-          content: `User: ${userInput}\nAssistant:`,
-        }
-      ],
+          content: `${userInput}`,
+      }),
       max_tokens: 1500,
       n: 1,
       temperature: 0.8,
@@ -136,7 +134,7 @@ function App() {
       setResponse('');
       setMessages((prevMessages) => {
         // メッセージ履歴を更新
-        const updatedMessages = [...prevMessages, { role: 'assistant', content: markdownit().render(fullText) } as Message];
+        const updatedMessages = [...prevMessages, { role: 'assistant', content: fullText } as Message];
         // メッセージ履歴をローカルストレージに保存
         localStorage.setItem('messageHistory', JSON.stringify(updatedMessages));
         return updatedMessages;
@@ -153,6 +151,12 @@ function App() {
       handleSend();
       e.preventDefault(); // デフォルトのEnterキーの動作（改行）をキャンセル
     }
+  };
+
+  // 履歴を削除する
+  const handleClearHistory = () => {
+    localStorage.removeItem('messageHistory');
+    setMessages([]);
   };
 
   return (
@@ -174,6 +178,7 @@ function App() {
       ) : (
         <button onClick={handleToggleApiKeyInput}>Show API Key Input</button>
       )}
+      <button onClick={handleClearHistory}>Clear History</button>
       { apiKey && (
         <>
           <hr/>
@@ -185,7 +190,7 @@ function App() {
               <div
                 key={index}
                 className={message.role === 'user' ? 'user-message' : 'assistant-message'}
-                dangerouslySetInnerHTML={{ __html: message.content }}
+                dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
               ></div>
             ))}
           </div>
