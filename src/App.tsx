@@ -134,7 +134,7 @@ function App() {
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
-      <p>Ctrl + Spaceでウィンドウ呼び出し</p>
+      <p>Alt + Spaceでウィンドウ呼び出し</p>
       {showApiKeyInput ? (
         <>
           <label htmlFor="api-key">API Key:</label>
