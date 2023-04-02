@@ -59,16 +59,26 @@ const createVoice = async (text: string, speaker: number = 1) => {
   return await synthesis.arrayBuffer();
 }
 // シンプルなタスクランナー
-let tasks = Promise.resolve();
+let createVoiceTasks = Promise.resolve();
+let playVoiceTasks = Promise.resolve();
+const wait = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // 音声合成を行い再生するタスクをランナーに依頼する関数
 const playVoice = async (text: string, speakerId: number) => {
-  tasks = tasks.then(() => {
+  createVoiceTasks = createVoiceTasks.then(() => {
     return new Promise(async (resolve) => {
-      const source = context.createBufferSource();
-      source.buffer = await context.decodeAudioData(await createVoice(text, speakerId));
-      source.connect(context.destination);
-      source.onended = () => {resolve();};
-      source.start();
+      const audioData = await createVoice(text, speakerId);
+      playVoiceTasks = playVoiceTasks
+      .then(() => wait(200)) // 1秒待つ
+      .then(() => { // 再生する
+        return new Promise(async (resolve) => {
+          const source = context.createBufferSource();
+          source.buffer = await context.decodeAudioData(audioData);
+          source.connect(context.destination);
+          source.onended = () => {resolve();};
+          source.start();
+        });
+      });
+      resolve();
     });
   });
 }
