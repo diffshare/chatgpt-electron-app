@@ -91,11 +91,13 @@ function App() {
   const [userInput, setUserInput] = useState('');
   const [response, setResponse] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(true);
-  const [playVoiceVox, setPlayVoiceVox] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [speakerId, setSpeakerId] = useState('1');
+  const [playVoiceUserInput, setPlayVoiceUserInput] = useState(false);
+  const [userInputSpeakerId, setUserInputSpeakerId] = useState('16');
+  const [playVoiceResponse, setPlayVoiceResponse] = useState(false);
+  const [responseSpeakerId, setResponseSpeakerId] = useState('3');
   const [playInMiddle, setPlayInMiddle] = useState(true);
   const [userInputTokenCount, setUserInputTokenCount] = useState(0);
   const [messagesTokenCount, setMessagesTokenCount] = useState(0);
@@ -174,6 +176,7 @@ function App() {
         body: JSON.stringify(requestOptions),
       })
       setUserInput('');
+      playVoiceUserInput && playVoice(userInput, parseInt(userInputSpeakerId))
 
       if (!response.body) throw new Error('No response body');
       if (!response.ok) {
@@ -200,11 +203,11 @@ function App() {
 
         setResponse(markdownit().render(fullText));
 
-        if (playVoiceVox && playInMiddle) {
+        if (playVoiceResponse && playInMiddle) {
           let match;
           while ((match = re.exec(fullText)) !== null) {
             if (spokenArray.includes(match[1])) continue;
-            playVoice(match[1], parseInt(speakerId))
+            playVoice(match[1], parseInt(responseSpeakerId))
             console.log(match[1]);
             spokenArray.push(match[1]);
           }
@@ -220,7 +223,7 @@ function App() {
         return updatedMessages;
       });
       setError('');
-      playVoiceVox && !playInMiddle && playVoice(fullText, parseInt(speakerId));
+      playVoiceResponse && !playInMiddle && playVoice(fullText, parseInt(responseSpeakerId));
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
@@ -304,14 +307,20 @@ function App() {
     }
   };
 
-  // VoiceVoxの再生チェックをローカルストレージから読み込む
+  // ResponseとUserInputの再生チェックをローカルストレージから読み込む
   useEffect(() => {
-    localStorage.getItem('playVoiceVox') === 'true' && setPlayVoiceVox(true);
+    localStorage.getItem('playResponse') === 'true' && setPlayVoiceResponse(true);
+    localStorage.getItem('playUserInput') === 'true' && setPlayVoiceUserInput(true);
   }, []);
-  // VoiceVoxを再生する
-  const handlePlayVoiceVoxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPlayVoiceVox(e.target.checked);
-    localStorage.setItem('playVoiceVox', e.target.checked.toString());
+  // Responseを再生するかどうかの設定を変更
+  const handlePlayVoiceResponseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayVoiceResponse(e.target.checked);
+    localStorage.setItem('playResponse', e.target.checked.toString());
+  };
+  // UserInputを再生するかどうかの設定
+  const handlePlayVoiceUserInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayVoiceUserInput(e.target.checked);
+    localStorage.setItem('playUserInput', e.target.checked.toString());
   };
 
   return (
@@ -381,11 +390,19 @@ function App() {
             Ctrl + Enterで送信
           </div>
           <div className='settings'>
+            <div>VoiceVox設定</div>
             <label>
-              <input type="checkbox" checked={playVoiceVox} onChange={handlePlayVoiceVoxChange} />
-              Play VoiceVox            
-              (Speaker ID:<input type="text" id='speaker-id' value={speakerId} onChange={(e) => setSpeakerId(e.target.value)} />)
+              <input type="checkbox" checked={playVoiceUserInput} onChange={handlePlayVoiceUserInputChange} />
+              Play UserInput
+              (Speaker ID:<input type="text" className='speaker-id' value={userInputSpeakerId} onChange={(e) => setUserInputSpeakerId(e.target.value)} maxLength={2} />)
             </label>
+            <br/>
+            <label>
+              <input type="checkbox" checked={playVoiceResponse} onChange={handlePlayVoiceResponseChange} />
+              Play Response
+              (Speaker ID:<input type="text" className='speaker-id' value={responseSpeakerId} onChange={(e) => setResponseSpeakerId(e.target.value)} maxLength={2} />)
+            </label>
+            <br/>
             <label>
               <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
               Play In middle
