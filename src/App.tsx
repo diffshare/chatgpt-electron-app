@@ -88,6 +88,7 @@ function App() {
   const [speakerId, setSpeakerId] = useState('1');
   const [playInMiddle, setPlayInMiddle] = useState(true);
   const [userInputTokenCount, setUserInputTokenCount] = useState(0);
+  const [messagesTokenCount, setMessagesTokenCount] = useState(0);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -258,9 +259,14 @@ function App() {
     setUserInputTokenCount(tokenCount);
   }, [userInput]);
 
-  // responseやmessagesが変更されたときにスクロール処理を実行
+  // 会話や応答が更新された時
   useEffect(() => {
+    // responseやmessagesが変更されたときにスクロール処理を実行
     scrollToBottom();
+    // 会話のトークン数を計算
+    if (messages.length > 0) {
+      setMessagesTokenCount(messages.map(m => countTokens(m.content)).reduce((a, b) => a + b) + countTokens(response));
+    }
   }, [response, messages]);
 
   // 履歴をMarkdown形式でクリップボードにコピーする
@@ -357,20 +363,24 @@ function App() {
           <div className='userInputStatus'>
             文字数: {userInput.length}
             ,
-            トークン数: {userInputTokenCount} / 2048
+            質問トークン数: {userInputTokenCount} / 2048
+            ,
+            会話トークン数: {messagesTokenCount} / 2048
           </div>
           <div className='note'>
             Ctrl + Enterで送信
           </div>
-          <label>
-            <input type="checkbox" checked={playVoiceVox} onChange={handlePlayVoiceVoxChange} />
-            Play VoiceVox            
-            (Speaker ID:<input type="text" id='speaker-id' value={speakerId} onChange={(e) => setSpeakerId(e.target.value)} />)
-          </label>
-          <label>
-            <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
-            Play In middle
-          </label>
+          <div className='settings'>
+            <label>
+              <input type="checkbox" checked={playVoiceVox} onChange={handlePlayVoiceVoxChange} />
+              Play VoiceVox            
+              (Speaker ID:<input type="text" id='speaker-id' value={speakerId} onChange={(e) => setSpeakerId(e.target.value)} />)
+            </label>
+            <label>
+              <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
+              Play In middle
+            </label>
+          </div>
           <div className="messagesEnd" ref={messagesEndRef} />
         </>
       )}

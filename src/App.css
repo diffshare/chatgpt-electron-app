@@ -67,10 +67,15 @@ textarea {
 
 .userInputStatus {
   color: rgba(0,0,0,0.5);
+  font-size: 0.7rem;
 }
 
 .note {
   float: right;
+}
+
+.settings {
+  margin-top: 10px;
 }
 
 #speaker-id {
