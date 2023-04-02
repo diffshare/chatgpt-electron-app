@@ -3,6 +3,7 @@ import './App.css';
 import {ChatCompletionRequestMessageRoleEnum, Configuration, CreateChatCompletionRequest, OpenAIApi} from 'openai';
 import markdownit from 'markdown-it';
 import { ipcRenderer } from 'electron';
+import { encoding_for_model } from "@dqbd/tiktoken";
 
 declare global {
   interface Window {
@@ -72,6 +73,8 @@ const playVoice = async (text: string, speakerId: number) => {
   });
 }
 
+const enc = encoding_for_model("gpt-3.5-turbo");
+
 function App() {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [apiKey, setApiKey] = useState('');
@@ -84,6 +87,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [speakerId, setSpeakerId] = useState('1');
   const [playInMiddle, setPlayInMiddle] = useState(true);
+  const [userInputTokenCount, setUserInputTokenCount] = useState(0);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -138,7 +142,7 @@ function App() {
           role: ChatCompletionRequestMessageRoleEnum.User,
           content: `${userInput}`,
       }),
-      max_tokens: 1000,
+      max_tokens: 2048,
       n: 1,
       temperature: 0.8,
       stream: true,
@@ -194,7 +198,7 @@ function App() {
             spokenArray.push(match[1]);
           }
         }
-    }
+      }
 
       setResponse('');
       setMessages((prevMessages) => {
@@ -242,6 +246,17 @@ function App() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // トークン数をカウントする
+  const countTokens = (text: string) => {
+    return enc.encode(text).length;
+  };
+
+  // 質問のトークン数を計算する
+  useEffect(() => {
+    const tokenCount = countTokens(userInput);
+    setUserInputTokenCount(tokenCount);
+  }, [userInput]);
 
   // responseやmessagesが変更されたときにスクロール処理を実行
   useEffect(() => {
@@ -339,7 +354,11 @@ function App() {
             onKeyUp={handleKeyPress}
             rows={5}
           />
-          <br/>
+          <div className='userInputStatus'>
+            文字数: {userInput.length}
+            ,
+            トークン数: {userInputTokenCount} / 2048
+          </div>
           <div className='note'>
             Ctrl + Enterで送信
           </div>

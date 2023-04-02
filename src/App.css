@@ -65,6 +65,10 @@ textarea {
   color: red;
 }
 
+.userInputStatus {
+  color: rgba(0,0,0,0.5);
+}
+
 .note {
   float: right;
 }

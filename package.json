@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@dqbd/tiktoken": "^1.0.2",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -19,9 +20,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "react-build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "craco start",
+    "react-build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject",
     "electron": "tsc ./src/electron.ts ./src/preload.ts && electron ./src/electron.js",
     "electron-start": "concurrently \"cross-env BROWSER=none npm start\" \"cross-env wait-on http://localhost:3000 && npm run electron\"",
@@ -48,6 +49,7 @@
     ]
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@types/markdown-it": "^12.2.3",
     "concurrently": "^8.0.1",
     "cross-env": "^7.0.3",
