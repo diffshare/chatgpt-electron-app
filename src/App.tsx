@@ -85,6 +85,11 @@ const playVoice = async (text: string, speakerId: number) => {
 
 const enc = encoding_for_model("gpt-3.5-turbo");
 
+type Conversation = {
+  name: string;
+  speakerId: string;
+};
+
 function App() {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [apiKey, setApiKey] = useState('');
@@ -101,6 +106,8 @@ function App() {
   const [playInMiddle, setPlayInMiddle] = useState(true);
   const [userInputTokenCount, setUserInputTokenCount] = useState(0);
   const [messagesTokenCount, setMessagesTokenCount] = useState(0);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [playConversation, setPlayConversation] = useState(false);
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -192,7 +199,8 @@ function App() {
 
       let fullText = '';
       const spokenArray: string[] = [];
-      const re = /([^。！？]{1,}[。！？])/g;
+      const resRe = /([^。！？]{1,}[。！？])/g;
+      const convRe = /(\S+)「(.+?)[」\n]/g;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -203,13 +211,42 @@ function App() {
 
         setResponse(markdownit().render(fullText));
 
-        if (playVoiceResponse && playInMiddle) {
-          let match;
-          while ((match = re.exec(fullText)) !== null) {
-            if (spokenArray.includes(match[1])) continue;
-            playVoice(match[1], parseInt(responseSpeakerId))
-            console.log(match[1]);
-            spokenArray.push(match[1]);
+        if (playInMiddle) {
+          // 回答を読み上げる
+          if (playVoiceResponse) {
+            let match;
+            while ((match = resRe.exec(fullText)) !== null) {
+              if (spokenArray.includes(match[1])) continue;
+              playVoice(match[1], parseInt(responseSpeakerId))
+              console.log(match[1]);
+              spokenArray.push(match[1]);
+            }
+          }
+          // 会話を読み上げる
+          if (playConversation) {
+            let match1;
+            let i = 0;
+            while ((match1 = convRe.exec(fullText)) !== null) {
+              const name = match1[1];
+              const text = match1[2];
+              let speakerId: string = "0";
+              conversations.filter((conv) => conv.name === name).forEach((conv) => {                
+                speakerId = conv.speakerId;
+              });
+              let match2;
+              while ((match2 = resRe.exec(text)) !== null) {
+                // 既に読み上げた会話は読み上げない
+                if (spokenArray[i]) {
+                  i++;
+                  continue;
+                }
+                console.log(`${i}:${match2[1]}`);
+                playVoice(match2[1], parseInt(speakerId))
+                // 会話を読み上げたことを記録
+                spokenArray[i] = match2[1];
+                i++;
+              }
+            }
           }
         }
       }
@@ -322,6 +359,19 @@ function App() {
     setPlayVoiceUserInput(e.target.checked);
     localStorage.setItem('playUserInput', e.target.checked.toString());
   };
+  // 会話の再生チェックをローカルストレージから読み込む
+  useEffect(() => {
+    localStorage.getItem('playConversation') === 'true' && setPlayConversation(true);
+    localStorage.getItem('conversations') && setConversations(JSON.parse(localStorage.getItem('conversations') || '[]'));
+  }, []);
+  const saveConversations = (value: Conversation[]) => {
+    localStorage.setItem('conversations', JSON.stringify(value));
+  };
+  // 会話を再生するかどうかの設定を変更
+  const handlePlayConversationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayConversation(e.target.checked);
+    localStorage.setItem('playConversation', e.target.checked.toString());
+  };
 
   return (
     <div className="App">
@@ -407,6 +457,22 @@ function App() {
               <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
               Play In middle
             </label>
+            <br/>
+            <fieldset>
+              <legend>Conversations</legend>
+              <label>
+                <input type="checkbox" checked={playConversation} onChange={handlePlayConversationChange} />
+                Play Conversation
+              </label>
+              <button onClick={() => setConversations(prev => [...prev, {name: '', speakerId: ''}])}>Add Conversation</button>
+              <button onClick={() => setConversations(prev => prev.slice(0, -1))}>Remove Conversation</button>
+              {conversations.map((conversation, index) => (
+                <div key={index}>
+                  発言者<input type="text" value={conversation.name} onChange={(e) => {setConversations(prev => {const ary = [...prev];ary[index].name = e.target.value; saveConversations(ary); return ary;})}} />
+                  Speaker ID:<input type="text" className='speaker-id' value={conversation.speakerId} onChange={(e) => {setConversations(prev => {const ary = [...prev]; ary[index].speakerId = e.target.value; saveConversations(ary); return ary})}} maxLength={2} />
+                </div>
+              ))}
+            </fieldset>
           </div>
           <div className="messagesEnd" ref={messagesEndRef} />
         </>
