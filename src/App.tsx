@@ -5,6 +5,9 @@ import markdownit from 'markdown-it';
 import { ipcRenderer } from 'electron';
 import { encoding_for_model } from "@dqbd/tiktoken";
 
+const OLD_MESSAGES_TOKEN_LIMIT = 2048;
+const MESSAGES_TOKEN_LIMIT = 1024 * 3;
+
 declare global {
   interface Window {
       ipcRenderer: typeof ipcRenderer;
@@ -158,13 +161,24 @@ function App() {
     });
     const openai = new OpenAIApi(configuration);
 
+    const requestMessages = [...messages, {
+      role: ChatCompletionRequestMessageRoleEnum.User,
+      content: `${userInputContent}`,
+    }];
+    // メッセージのトークン数が上限を超えている場合は古いメッセージを削除
+    while (requestMessages.map(m => countTokens(m.content)).reduce((a, b) => a + b) > OLD_MESSAGES_TOKEN_LIMIT) {
+      // メッセージ履歴のトークン数を減らす
+      requestMessages.shift();
+    }
+    const requestMessagesToken = requestMessages.map(m => countTokens(m.content)).reduce((a, b) => a + b) + countTokens(userInputContent);
+    if (requestMessagesToken > MESSAGES_TOKEN_LIMIT) {
+      setError(`メッセージのトークン数が上限(${MESSAGES_TOKEN_LIMIT})を超えています。`);
+      return;
+    }
+
     const requestOptions: CreateChatCompletionRequest = {
       model: 'gpt-3.5-turbo',
-      messages: messages.concat({
-          role: ChatCompletionRequestMessageRoleEnum.User,
-          content: `${userInputContent}`,
-      }),
-      max_tokens: 2048,
+      messages: requestMessages,
       n: 1,
       temperature: 0.8,
       stream: true,
