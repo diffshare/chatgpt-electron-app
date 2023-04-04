@@ -452,7 +452,7 @@ function App() {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="Type your message here..."
-            onKeyUp={handleKeyPress}
+            onKeyDown={handleKeyPress}
             rows={5}
           />
           <div className='userInputStatus'>
