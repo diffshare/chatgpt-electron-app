@@ -65,6 +65,10 @@ textarea {
   color: red;
 }
 
+.user-input-actions {
+  margin-bottom: 10px;
+}
+
 .status {
   color: rgba(0,0,0,0.5);
   font-size: 0.7rem;

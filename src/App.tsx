@@ -146,10 +146,12 @@ function App() {
     localStorage.setItem('apiKey', newApiKey);
   };
 
-  const handleSend = async () => {
-    if (!userInput || !apiKey) return;
+  // GPTにメッセージを送信する関数
+  const handleSend = async (_userInput?: string) => {
+    const userInputContent = _userInput || userInput;
+    if (!userInputContent || !apiKey) return;
 
-    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: userInput }]);
+    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: userInputContent }]);
 
     const configuration = new Configuration({
       apiKey
@@ -160,7 +162,7 @@ function App() {
       model: 'gpt-3.5-turbo',
       messages: messages.concat({
           role: ChatCompletionRequestMessageRoleEnum.User,
-          content: `${userInput}`,
+          content: `${userInputContent}`,
       }),
       max_tokens: 2048,
       n: 1,
@@ -427,6 +429,9 @@ function App() {
           {error && (
             <div className="error">{error}</div>
           )}
+          <div className='user-input-actions'>
+            <button onClick={() => handleSend('Continue')}>Continue</button>
+          </div>
           <textarea
             ref={textareaRef}
             value={userInput}
