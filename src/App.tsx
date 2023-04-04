@@ -446,8 +446,9 @@ function App() {
           )}
           <div className='user-input-actions'>
             <button onClick={() => handleSend('Continue')}>Continue</button>
-            <button onClick={() => handleSend('次の文章を日本語に翻訳して:\n\n' + userInput)}>日本語に翻訳</button>
-            <button onClick={() => handleSend('次の文章を要約して:\n\n' + userInput)}>要約</button>
+            <button onClick={() => handleSend('Translate to Japanese:\n\n' + userInput)}>Translate to Japanese</button>
+            <button onClick={() => handleSend('Translate to English:\n\n' + userInput)}>Translate to English</button>
+            <button onClick={() => handleSend('Summarize in Japanese:\n\n' + userInput)}>Summarize in Japanese</button>
           </div>
           <textarea
             ref={textareaRef}
