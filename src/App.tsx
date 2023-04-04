@@ -4,6 +4,8 @@ import {ChatCompletionRequestMessageRoleEnum, Configuration, CreateChatCompletio
 import markdownit from 'markdown-it';
 import { ipcRenderer } from 'electron';
 import { encoding_for_model } from "@dqbd/tiktoken";
+import autonomousSystemPrompt from './prompts/autonomousSystemPrompt';
+import { parse } from 'node-html-parser';
 
 declare global {
   interface Window {
@@ -12,7 +14,7 @@ declare global {
 }
 
 type Message = {
-  role: 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant';
   content: string;
 };
 
@@ -90,6 +92,47 @@ type Conversation = {
   speakerId: string;
 };
 
+type GoogleCommand = {
+  name: "google",
+  args: {
+    input: string;
+  }
+}
+type BrowseCommand = {
+  name: "browse_website",
+  args: {
+    url: string;
+  }
+}
+type AskUserCommand = {
+  name: "ask_user",  
+  args: {
+    id: string;
+    type: string;
+    label: string;
+    placeholder: string;
+    options?: {
+      label: string;
+      value: string;
+    }[]
+  }
+}
+type ResponseJson = {
+  command: AskUserCommand | GoogleCommand | BrowseCommand,
+  thoughts: {
+    text: string;
+    reasoning: string;
+    plan: string;
+    criticism: string;
+    speak: string;
+  }
+};
+
+type Answer = {
+  id: string;
+  value: string;
+};
+
 function App() {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [apiKey, setApiKey] = useState('');
@@ -108,6 +151,9 @@ function App() {
   const [messagesTokenCount, setMessagesTokenCount] = useState(0);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [playConversation, setPlayConversation] = useState(false);
+  const [autonomusMode, setAutonomusMode] = useState(false);
+  const [responseJson, setResponseJson] = useState<ResponseJson | null>();
+  const [answer, setAnswer] = useState<Answer>({id: '', value: ''});
 
   const handleToggleApiKeyInput = () => {
     setShowApiKeyInput(!showApiKeyInput);
@@ -146,23 +192,34 @@ function App() {
     localStorage.setItem('apiKey', newApiKey);
   };
 
-  const handleSend = async () => {
-    if (!userInput || !apiKey) return;
+  const handleSend = async (input?: string) => {
+    if (!(input || userInput) || !apiKey) return;
 
-    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: userInput }]);
+    setMessages((prevMessages) => [...prevMessages, { role: 'user', content: input ?? userInput }]);
 
     const configuration = new Configuration({
       apiKey
     });
     const openai = new OpenAIApi(configuration);
+    let requestMessages = [...messages, {
+      role: ChatCompletionRequestMessageRoleEnum.User,
+      content: `${input ?? userInput}`,
+    }];
+    // メッセージが1024トークンを超えたら古いメッセージを削除
+    while (requestMessages.map(m => countTokens(m.content)).reduce((a, b) => a + b) > 1024) {
+      requestMessages.shift();
+    }
+    if (autonomusMode) {
+      requestMessages = [{
+        role: ChatCompletionRequestMessageRoleEnum.System,
+        content: autonomousSystemPrompt,
+      }, ...requestMessages];
+    }
 
     const requestOptions: CreateChatCompletionRequest = {
       model: 'gpt-3.5-turbo',
-      messages: messages.concat({
-          role: ChatCompletionRequestMessageRoleEnum.User,
-          content: `${userInput}`,
-      }),
-      max_tokens: 2048,
+      messages: requestMessages,
+      // max_tokens: 2048,
       n: 1,
       temperature: 0.8,
       stream: true,
@@ -183,7 +240,7 @@ function App() {
         body: JSON.stringify(requestOptions),
       })
       setUserInput('');
-      playVoiceUserInput && playVoice(userInput, parseInt(userInputSpeakerId))
+      playVoiceUserInput && playVoice(input ?? userInput, parseInt(userInputSpeakerId))
 
       if (!response.body) throw new Error('No response body');
       if (!response.ok) {
@@ -260,7 +317,24 @@ function App() {
         return updatedMessages;
       });
       setError('');
+      // 回答を読み上げる
       playVoiceResponse && !playInMiddle && playVoice(fullText, parseInt(responseSpeakerId));
+
+      // ```json 〜 ``` で囲まれた部分を抽出
+      // NOTE: .は改行にマッチしないので[\s\S]を使う
+      // const jsonRe = /```json([\s\S]+?)```/g;
+      const jsonRe = /(\{\n  "command"[\s\S]*\})/g;
+      const json = jsonRe.exec(fullText);
+      // console.log(json);
+      if (json) {
+        const jsonText = json[1];
+        console.log(jsonText);
+        const jsonResult = JSON.parse(jsonText);
+        if (jsonResult) {
+          setResponseJson(jsonResult);
+          autonomousNext(jsonResult);
+        }
+      }
     } catch (error) {
       console.error(error);
       setResponse('Error: Failed to get a response from ChatGPT.');
@@ -373,6 +447,43 @@ function App() {
     localStorage.setItem('playConversation', e.target.checked.toString());
   };
 
+  // 自律モードを設定
+  const handleAutonomusModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutonomusMode(e.target.checked);
+  };
+  const handleAskUser = (id: string, value?: string) => {
+    setUserInput(JSON.stringify({...answer, id, value}));
+    handleSend();
+  };
+
+  const autonomousNext = async (result: ResponseJson) => {
+    if (!autonomusMode) return;
+    if (result.command.name === "google" && result.command.args.input) {
+      // console.log("google1");
+      const searchResults = await (await fetch('https://duckduckgo.com/html/?q=' + encodeURI(result.command.args.input))).text();
+      // console.log("google2");
+      const root = parse(searchResults);
+      if (!root) return;
+      const input = "```json\n"+JSON.stringify(root.querySelectorAll(".result__url").map((r) => {return {url: "https://"+r.innerText.trim()}}))+"\n```";
+      // console.log("google3");
+      setUserInput(input);
+      handleSend(input);
+    }
+    if (result.command.name === 'browse_website') {
+      console.log("browse_website 1");
+      const url = result.command.args.url;
+      if (!url) return;
+      console.log("browse_website 2");
+      const searchResults = await (await fetch(url)).text();
+      const root = parse(searchResults);
+      if (!root) return;
+      console.log("browse_website 3");
+      const input = "```json\n" + JSON.stringify({result: root.querySelector('html')?.innerText.replaceAll(/[\r\n\s]/g, "").slice(0, 2000)})+"\n```";
+      setUserInput(input);
+      handleSend(input);
+    }
+  };
+
   return (
     <div className="App">
       <h1>ChatGPT Electron App</h1>
@@ -394,87 +505,143 @@ function App() {
       )}
       <button onClick={handleClearHistory}>Clear History</button>
       <button onClick={handleExportHistory}>Export History</button>
+      <label>
+        <input type="checkbox" checked={autonomusMode} onChange={handleAutonomusModeChange} />
+        自律行動モード
+      </label>
       { apiKey && (
         <>
           <hr/>
           {/* <button onClick={handleSend}>Send</button> */}
 
-          {/* messagesステートを繰り返し処理して、メッセージを表示 */}
-          <div className="messages">
-            {messages.map((message, index) => (
-              <>
-                <div
-                  key={index}
-                  className={message.role === 'user' ? 'user-message' : 'assistant-message'}
-                  dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
-                ></div>
-                {/* コピー用ボタンを追加 */}
-                <div className="MessageActions">
-                  <button onClick={() => handleCopyToClipboard(message)}>Copy to Clipboard</button>
-                </div>
-              </>
-            ))}
-          </div>
-          {/* リアルタイムのメッセージを表示 */}
-          <div dangerouslySetInnerHTML={{__html: response}}></div>
-          <br/>
-          {error && (
-            <div className="error">{error}</div>
-          )}
-          <textarea
-            ref={textareaRef}
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your message here..."
-            onKeyUp={handleKeyPress}
-            rows={5}
-          />
-          <div className='userInputStatus'>
-            文字数: {userInput.length}
-            ,
-            質問トークン数: {userInputTokenCount} / 2048
-            ,
-            会話トークン数: {messagesTokenCount} / 2048
-          </div>
-          <div className='note'>
-            Ctrl + Enterで送信
-          </div>
-          <div className='settings'>
-            <div>VoiceVox設定</div>
-            <label>
-              <input type="checkbox" checked={playVoiceUserInput} onChange={handlePlayVoiceUserInputChange} />
-              Play UserInput
-              (Speaker ID:<input type="text" className='speaker-id' value={userInputSpeakerId} onChange={(e) => setUserInputSpeakerId(e.target.value)} maxLength={2} />)
-            </label>
-            <br/>
-            <label>
-              <input type="checkbox" checked={playVoiceResponse} onChange={handlePlayVoiceResponseChange} />
-              Play Response
-              (Speaker ID:<input type="text" className='speaker-id' value={responseSpeakerId} onChange={(e) => setResponseSpeakerId(e.target.value)} maxLength={2} />)
-            </label>
-            <br/>
-            <label>
-              <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
-              Play In middle
-            </label>
-            <br/>
-            <fieldset>
-              <legend>Conversations</legend>
-              <label>
-                <input type="checkbox" checked={playConversation} onChange={handlePlayConversationChange} />
-                Play Conversation
-              </label>
-              <button onClick={() => setConversations(prev => [...prev, {name: '', speakerId: ''}])}>Add Conversation</button>
-              <button onClick={() => setConversations(prev => prev.slice(0, -1))}>Remove Conversation</button>
-              {conversations.map((conversation, index) => (
-                <div key={index}>
-                  発言者<input type="text" value={conversation.name} onChange={(e) => {setConversations(prev => {const ary = [...prev];ary[index].name = e.target.value; saveConversations(ary); return ary;})}} />
-                  Speaker ID:<input type="text" className='speaker-id' value={conversation.speakerId} onChange={(e) => {setConversations(prev => {const ary = [...prev]; ary[index].speakerId = e.target.value; saveConversations(ary); return ary})}} maxLength={2} />
-                </div>
-              ))}
-            </fieldset>
-          </div>
-          <div className="messagesEnd" ref={messagesEndRef} />
+          <div className='container'>
+            <div className='conversations'>
+              {/* messagesステートを繰り返し処理して、メッセージを表示 */}
+              <div className="messages">
+                {messages.map((message, index) => (
+                  <>
+                    <div
+                      key={index}
+                      className={message.role === 'user' ? 'user-message' : 'assistant-message'}
+                      dangerouslySetInnerHTML={{ __html: markdownit().render(message.content) }}
+                    ></div>
+                    {/* コピー用ボタンを追加 */}
+                    <div className="MessageActions">
+                      <button onClick={() => handleCopyToClipboard(message)}>Copy to Clipboard</button>
+                    </div>
+                  </>
+                ))}
+              </div>
+              {/* リアルタイムのメッセージを表示 */}
+              <div dangerouslySetInnerHTML={{__html: response}}></div>
+              <br/>
+              {error && (
+                <div className="error">{error}</div>
+              )}
+              <textarea
+                ref={textareaRef}
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="Type your message here..."
+                onKeyUp={handleKeyPress}
+                rows={5}
+              />
+              <div className='userInputStatus'>
+                文字数: {userInput.length}
+                ,
+                質問トークン数: {userInputTokenCount} / 2048
+                ,
+                会話トークン数: {messagesTokenCount} / 2048
+              </div>
+              <div className='note'>
+                Ctrl + Enterで送信
+              </div>
+              <div className='settings'>
+                <div>VoiceVox設定</div>
+                <label>
+                  <input type="checkbox" checked={playVoiceUserInput} onChange={handlePlayVoiceUserInputChange} />
+                  Play UserInput
+                  (Speaker ID:<input type="text" className='speaker-id' value={userInputSpeakerId} onChange={(e) => setUserInputSpeakerId(e.target.value)} maxLength={2} />)
+                </label>
+                <br/>
+                <label>
+                  <input type="checkbox" checked={playVoiceResponse} onChange={handlePlayVoiceResponseChange} />
+                  Play Response
+                  (Speaker ID:<input type="text" className='speaker-id' value={responseSpeakerId} onChange={(e) => setResponseSpeakerId(e.target.value)} maxLength={2} />)
+                </label>
+                <br/>
+                <label>
+                  <input type="checkbox" checked={playInMiddle} onChange={(e) => setPlayInMiddle(e.target.checked)} />
+                  Play In middle
+                </label>
+                <br/>
+                <fieldset>
+                  <legend>Conversations</legend>
+                  <label>
+                    <input type="checkbox" checked={playConversation} onChange={handlePlayConversationChange} />
+                    Play Conversation
+                  </label>
+                  <button onClick={() => setConversations(prev => [...prev, {name: '', speakerId: ''}])}>Add Conversation</button>
+                  <button onClick={() => setConversations(prev => prev.slice(0, -1))}>Remove Conversation</button>
+                  {conversations.map((conversation, index) => (
+                    <div key={index}>
+                      発言者<input type="text" value={conversation.name} onChange={(e) => {setConversations(prev => {const ary = [...prev];ary[index].name = e.target.value; saveConversations(ary); return ary;})}} />
+                      Speaker ID:<input type="text" className='speaker-id' value={conversation.speakerId} onChange={(e) => {setConversations(prev => {const ary = [...prev]; ary[index].speakerId = e.target.value; saveConversations(ary); return ary})}} maxLength={2} />
+                    </div>
+                  ))}
+                </fieldset>
+              </div>
+              <div className="messagesEnd" ref={messagesEndRef} />
+            </div>            
+            <div className='autonomous'>
+              {responseJson && (
+                <>
+                  COMMAND: {responseJson.command.name}<br/>
+                  ARGS: {responseJson.command.args && JSON.stringify(responseJson.command.args)}<br/>
+                </>
+              )}
+              {responseJson?.thoughts && (
+                <>
+                  <br/>
+                  THOUGHTS:<br/>
+                  TEXT: {responseJson.thoughts.text}<br/>
+                  REASONING: {responseJson.thoughts.reasoning}<br/>
+                  PLAN: <div dangerouslySetInnerHTML={{__html: markdownit().render(responseJson.thoughts.plan)}}/>
+                  <br/>
+                  CRITICISM: {responseJson.thoughts.criticism}<br/>
+                  SPEAK: {responseJson.thoughts.speak}<br/>
+
+
+                  {responseJson.command.name === 'ask_user' && (
+                    <>
+                      {responseJson.command.args.type === 'text' && (
+                        <>
+                          <input type="text" placeholder={responseJson.command.args.placeholder} id={responseJson.command.args.id} onChange={e => {setAnswer(prev => {return {...prev, value: e.target.value};})}} />
+                          <button onClick={() => handleAskUser("id", answer.value)}>Send</button>
+                        </>
+                      )}
+                      {responseJson.command.args.type === 'textarea' && (
+                        <>
+                          <textarea placeholder={responseJson.command.args.placeholder} id={responseJson.command.args.id} onChange={e => {setAnswer(prev => {return {...prev, value: e.target.value};})}} />
+                          <button onClick={() => handleAskUser("id", answer.value)}>Send</button>
+                        </>
+                      )}
+                      {responseJson.command.args.type === 'select' && (
+                        <>
+                          {responseJson.command.args.options?.map((option, index) => (
+                            <button key={index} onClick={() => handleAskUser("id", option.value)}>{option.label}</button>
+                          ))}
+                          <textarea placeholder={responseJson.command.args.placeholder} id={responseJson.command.args.id} onChange={e => {setAnswer(prev => {return {...prev, value: e.target.value};})}} />
+                          <button onClick={() => handleAskUser("id")}>Send</button>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {/* {JSON.stringify(responseJson)} */}
+                </>
+              )}
+            </div>    
+          </div>          
         </>
       )}
     </div>
