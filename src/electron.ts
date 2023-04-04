@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from 'electron';
+import { app, BrowserWindow, clipboard, globalShortcut } from 'electron';
 import * as path from 'path';
 
 function createWindow() {
@@ -17,7 +17,7 @@ function createWindow() {
     globalShortcut.register('Alt+Space', () => {
         console.log('Alt+Space is pressed');
 
-        if (!win.isVisible()) {
+        if (!win.isFocused()) {
             // windowを表示する
             win.show();
 
@@ -33,6 +33,15 @@ function createWindow() {
             win.hide();
         }
     });
+    globalShortcut.register('Ctrl+Alt+C', () => {
+      console.log('Ctrl+Alt+C is pressed');
+      // windowを表示する
+      win.show();
+      // windowをアクティブにする
+      win.focus();
+      win.webContents.send('focus');
+      win.webContents.send('paste');
+  });
 }
 
 app.whenReady().then(createWindow);

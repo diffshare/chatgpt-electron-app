@@ -134,7 +134,8 @@ function App() {
   useEffect(() => {
     window.ipcRenderer?.on('focus', (event, message) => {
       textareaRef.current?.focus();
-
+    });
+    window.ipcRenderer?.on('paste', (event, message) => {
       const clipboardText = window.clipboard.readText();
       setUserInput(clipboardText);
       setTimeout(() => {

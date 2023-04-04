@@ -16,7 +16,7 @@ function createWindow() {
     //   win.loadFile(path.join(__dirname, '../public/index.html'));
     electron_1.globalShortcut.register('Alt+Space', function () {
         console.log('Alt+Space is pressed');
-        if (!win.isVisible()) {
+        if (!win.isFocused()) {
             // windowを表示する
             win.show();
             // 他のwindowより手前に表示する
@@ -29,6 +29,15 @@ function createWindow() {
             // windowを非表示にする
             win.hide();
         }
+    });
+    electron_1.globalShortcut.register('Ctrl+Alt+C', function () {
+        console.log('Ctrl+Alt+C is pressed');
+        // windowを表示する
+        win.show();
+        // windowをアクティブにする
+        win.focus();
+        win.webContents.send('focus');
+        win.webContents.send('paste');
     });
 }
 electron_1.app.whenReady().then(createWindow);
