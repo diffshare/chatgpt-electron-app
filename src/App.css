@@ -53,7 +53,7 @@ textarea {
 }
 
 .MessageActions {
-  text-align: right;
+  float: right;
   opacity: 0.35;
 }
 
@@ -63,6 +63,11 @@ textarea {
 
 .error {
   color: red;
+}
+
+.status {
+  color: rgba(0,0,0,0.5);
+  font-size: 0.7rem;
 }
 
 .userInputStatus {

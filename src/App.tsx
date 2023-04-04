@@ -412,6 +412,12 @@ function App() {
                 <div className="MessageActions">
                   <button onClick={() => handleCopyToClipboard(message)}>Copy to Clipboard</button>
                 </div>
+                {/* メッセージの文字数を表示 */}
+                <div className='status'>
+                  文字数: {message.content.length}
+                  ,
+                  トークン数: {countTokens(message.content)}
+                </div>
               </>
             ))}
           </div>
